@@ -1,0 +1,187 @@
+---
+- name: install jivelite
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+
+  tasks:
+  - name: install audio packages
+    block:
+    - name: update cache
+      register: updatesys
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400 # one day
+      become: true
+      notify: apt_upgrade
+
+    - name: install squeezelite and dependencies for building jivelite
+      apt:
+        pkg:
+          - squeezelite
+          - git
+          - libsdl1.2-dev
+          - libsdl-ttf2.0-dev
+          - libsdl-image1.2-dev
+          - libsdl-gfx1.2-dev
+          - libexpat1-dev
+        state: latest
+      become: true
+
+    - name: check for luajit
+      stat:
+        path: /usr/local/include/luajit-2.0
+      register: lua_st
+
+    - name: clone luajit-2.0
+      git:
+        repo: https://luajit.org/git/luajit-2.0.git
+        dest: /tmp/src/luajit
+        clone: yes
+        update: yes
+      when: not lua_st.stat.exists
+
+    - name: install luajit
+      make:
+        chdir: /tmp/src/luajit
+        target: all
+      become: true
+      when: not lua_st.stat.exists
+
+    - name: run ldconfig
+      command: ldconfig
+      become: true
+      when: not lua_st.stat.exists
+
+    - name: check if jivelite is installed
+      stat:
+        path: /opt/jivelite
+      register: jivelite_st
+
+    - name: clone jivelite
+      git:
+        repo: https://github.com/ralph-irving/jivelite
+        dest: /tmp/src/jivelite
+        clone: yes
+        update: yes
+      when: not jivelite_st.stat.exists
+
+    - name: make jivelite
+      make:
+        chdir: /tmp/src/jivelite
+      when: not jivelite_st.stat.exists
+
+    - name: install jivelite
+      command: mv /tmp/src/jivelite /opt
+      args:
+        creates: /opt/jivelite
+      become: true
+      when: not jivelite_st.stat.exists
+
+    - name:
+      file: 
+        path: ~/bin/
+        state: directory
+        mode: 0750
+
+    - name: create JiveLite launch script
+      copy:
+        src: ./files/jivelite.sh
+        dest: ~/bin/jivelite.sh
+        mode: 0750
+
+  - name: add jivelite to menus
+    block:
+      - name: check alacarte directory exists
+        file:
+          path: ~/.local/share/applications/
+          state: directory
+          mode: 0755
+
+      - name: add menu file Other > Jivelite
+        copy:
+          src: ./files/jivelite.desktop
+          dest: ~/.local/share/applications/jivelite.desktop
+
+      - name: check pannel config directory exists
+        file:
+          path: ~/.config/lxpanel/LXDE-pi/panels/
+          state: directory
+          mode: 0755
+
+      - name: resize menu to make jivelite fit better on screen
+        lineinfile:
+          path: ~/.config/lxpanel/LXDE-pi/panels/panel
+          regexp: '{{item.From}}'
+          line: '{{item.To}}'
+          state: present
+        with_items:
+          - { From: '(\W+)(height=\d+).*', To: '  height=20' }
+          - { From: '(\W+)(iconsize=\d+).*', To: '  iconsize=20' }
+
+      - name: add jivelite to launcher bar (quick launcher)
+        lineinfile:
+          # check for this line (multi line regex)
+          regexp: '^\W+Button\W+\{\W?\n\W+id=jivelite\.desktop\W?\n\W+\}\W?\n'
+          path: ~/.config/lxpanel/LXDE-pi/panels/panel
+          # add line(s) after config section header
+          insertafter: '^Plugin\W{\n\W+type=launchbar\n\W+Config\W\{.*'
+          line: '{{item}}'
+          state: present
+        with_items:
+          - '    Button {'
+          - '      id=jivelite.desktop'
+          - '    }'
+
+  - name: setup OpenBox (lxde) configuration file for borderless jivelite
+    block:
+      - name: create openbox directory
+        file:
+          path: ~/.config/openbox
+          state: directory
+          mode: 0750
+
+      - name: copy default lxde file
+        command: cp /etc/xdg/openbox/lxde-pi-rc.xml ~/.config/openbox/lxde-pi-rc.xml
+        args:
+          creates: ~/.config/openbox/lxde-pi-rc.xml
+
+      - name: insert decoration instructions into lxde-pi-rc
+        blockinfile:
+          path: ~/.config/openbox/lxde-pi-rc.xml
+          marker: <!-- {mark} Ansible Managed Block -->
+          block: |
+                  <application name="jivelite">
+                    <decor>no</decor>
+                  </application>
+          insertbefore: ".*</applications>"
+
+  - name: setup jivelite menus
+    block:
+      - name: ensure user jivelite directories exist
+        file:
+          state: directory
+          path: ~/.jivelite/userpath/settings
+
+      - name: now-playing menu setup
+        copy:
+          src: ./files/jivelite_NowPlaying.lua
+          dest: ~/.jivelite/userpath/settings/NowPlaying.lua
+
+      - name: home menu setup
+        copy:
+         src: ./files/jivelite_CustomizeHomeMenu.lua
+         dest: ~/.jivelite/userpath/settings/CustomizeHomeMenu.lua
+
+
+
+  handlers:
+    - name: apt_upgrade
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 86400
+      become: true
+
+
+

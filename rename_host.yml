@@ -1,0 +1,39 @@
+---
+- name: rename hosts
+  hosts: "{{ host | default('none') }}"
+  vars_prompt:      
+    - name: new_name
+      prompt: "What is the new hostname?"
+      private: no
+      when: new_name is undefined
+
+
+  tasks:
+    - fail: 
+        msg: "specify -e 'new_name=NewHostName'"
+      when: (new_name is undefined) or (new_name|length == 0)
+
+    - fail:
+        msg: "specify -e 'host=hosta,hostb'"
+      when: (host is undefined) or (host|length == 0)
+
+    - name: change {{ host }} to {{ new_name }}
+      become: true
+      hostname: name={{ new_name }}
+      when: ansible_ssh_host != new_name
+      notify: reboot
+      become: true
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Reboot initiated by Ansible"
+#        connect_timeout: 5
+#        reboot_timeout: 300
+#        pre_reboot_delay: 0
+#        post_reboot_delay: 30
+#        test_command: whoami
+      become: true
+
+
+

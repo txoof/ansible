@@ -1,0 +1,42 @@
+---
+- name: set static ip
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+
+  tasks:
+  - name: get network devices
+    command: ip link
+    register: devices
+
+  - name: choose a network device to set a static ip
+    pause:
+      prompt: "{{devices.stdout}}\n\nEnter the name of a network device for static ip setup"
+    register: interface
+
+  - name: enter static ip
+    pause:
+      prompt: "Enter static ip address in the format xxx.xxx.xxx.xxx/24"
+    register: staticip
+
+  - name: enter router
+    pause:
+      prompt: "Enter router ip address"
+    register: router
+
+  - name: enter domain name servers
+    pause:
+      prompt:
+    register: dnsserver
+
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 45
+        test_command: whoami
+      become: true
+    

@@ -1,0 +1,46 @@
+---
+- name: setup pi image for ssh and wpa
+  hosts: localhost
+  connection: local
+
+  tasks:
+  - name: add files to partitions
+    block:
+      - name: add ssh file to boot volume
+        copy:
+          dest: /Volumes/boot/ssh
+          content: ""
+
+      - name: add wpa suplicant file to boot volume
+        copy:
+          src: ./files/wpa_supplicant.conf
+          dest: /Volumes/boot/wpa_supplicant.conf
+
+      - name: get ssid
+        pause:
+          prompt: "please enter ssid for wifi network"
+        register: ssid
+
+      - name: get wpa password
+        pause:
+          prompt: "please enter psk for {{ssid.user_input}}"
+        register: psk
+
+      - name: add ssid and wpa password to supplicant.conf
+        blockinfile:
+          path: /Volumes/boot/wpa_supplicant.conf
+          insertafter: "network={"
+          block: |
+             ssid="{{ssid.user_input}}"
+             psk="{{psk.user_input}}"
+
+
+
+
+#    rescue:
+#      - debug:
+#          msg: "This playbook must be run with the '-K' switch to prompt for sudo password"
+#    
+#  post_tasks:
+#    - command: umount /tmp/ext4/
+#      become: true

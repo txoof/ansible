@@ -1,0 +1,102 @@
+---
+- name: install basics
+  hosts: "{{ host | default('none') }}"
+  gather_facts: true
+
+  tasks:
+    - name: update cache
+      register: updatesys
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400 # one day
+      become: true
+
+    - name: upgrade packages
+      register: updatesys
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 86400
+      become: true
+
+    - name: Display previous task to check stats
+      debug:
+        msg: "{{ updatesys.stdout_lines|last }}"
+
+    - name: install packages
+      apt:
+        pkg:
+          - tmux
+          - vim
+          - git
+          - python3
+          - python3-pip
+          - zsh
+        state: latest
+      become: true
+
+    - name: install python packages
+      pip:
+        executable: pip3
+        name:
+          - dotfiles
+
+    - name: Setting keypairs
+      openssh_keypair:
+        path: "~/.ssh/id_rsa"
+        state: present
+        force: no
+      register: ssh_output
+
+    - debug:
+        msg: "{{ ssh_output.public_key }}"
+
+    - pause:
+        prompt: "register the public key with github at the following address: https://github.com/txoof/Dotfiles/settings/keys/new"
+
+    - name: scan and register remote host
+      command: "ssh-keyscan github.com"
+      register: host_keys
+      changed_when: false
+
+    - debug:
+        msg: "{{ host_keys.stdout_lines[0] }}"
+
+    - name: add remote host
+      known_hosts:
+        name: "github.com" 
+        state: present
+        key: "{{ host_keys.stdout_lines[0] }}"
+
+
+    - name: clone dotfiles repo
+      git:
+        repo: "git@github.com:txoof/Dotfiles.git"
+        dest: "~/Dotfiles"
+        clone: yes
+        update: yes
+
+    - name: set shell to zsh
+      user:
+        name: pi
+        shell: /usr/bin/zsh
+      become: yes
+
+    - name: clone oh-my-zsh
+      git:
+        repo=https://github.com/robbyrussell/oh-my-zsh
+        dest=~/.oh-my-zsh
+
+    - name: install dotfiles package
+      pip:
+        name: dotfiles
+
+    - name: set symlink for dotfilesrc
+      file:
+        src: ~/Dotfiles/dotfilesrc
+        dest: ~/.dotfilesrc
+        state: link
+
+    - name: link dotfiles
+      command: /home/pi/.local/bin/dotfiles -s --force

@@ -1,0 +1,18 @@
+[pis]
+slimpi.local        ansible_connection=ssh ansible_user=pi
+kitchenpi.local     ansible_connection=ssh ansible_user=pi
+develpi.local       ansible_connection=ssh ansible_user=pi
+raspberrypi.local   ansible_connection=ssh ansible_user=pi
+
+[newpi]
+raspberrypi.local   ansible_connection=ssh ansible_user=pi
+trialpi.local       ansible_connection=ssh ansible_user=pi
+
+[local]
+localhost
+
+[debian]
+slimpi.local        ansible_connection=ssh ansible_user=pi
+kitchenpi.local     ansible_connection=ssh ansible_user=pi
+develpi.local       ansible_connection=ssh ansible_user=pi
+

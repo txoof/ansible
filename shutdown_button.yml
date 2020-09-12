@@ -1,0 +1,21 @@
+---
+- name: enable shutdown button on GPIO3 (pins 5, 6)
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+
+  tasks:
+    - name: add shutdown line to config.txt
+      lineinfile:
+        state: present
+        regexp: '^dtoverlay=gpio-shutdown.*'
+        line: 'dtoverlay=gpio-shutdown'
+        path: /boot/config.txt
+      become: true
+      notify: reboot
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "reboot initated by ansible"
+        pre_reboot_delay: 0
+      become: true
