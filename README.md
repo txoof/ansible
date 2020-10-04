@@ -103,4 +103,37 @@ Install jivelite and configure for R. Pi touch screen
   * make, build and install jivelite
   * create launch scripts 
   * add X menu items
-  * configure X menus to accomodate JiveLite in psuedo full-screen mode on Ras
+  * configure X menus to accomodate JiveLite in psuedo full-screen mode on Rasberry pi
+ 
+### rpi_jupyter
+Install jupyter and pipenv
+
+#### Tasks Excuted
+* Pip install
+ - Jupyter
+ - pipenv
+ 
+### rpi_led_control
+Turn off status lights
+
+#### Tasks Executed
+* set LEDs to off in `/boot/config.txt`
+* Copy led_ctl script
+* Create & install led_ctl unit file for systemctl
+* switch off LEDs
+
+### rpi_shtudown_button
+set up a shut down/power on switch
+
+This is specifically designed for a three position momentary toggle switch with a common pole. Connect the common pole to ground (physical pin 6) and positon A to physical pin 11 (GPIO-17) for shutdown and position B to physical pin 5 (GPIO-3) wake from shtudown.
+
+#### Tasks Executed
+* add line to `/boot/config.txt`
+
+### rpi_spi_on
+Enable SPI
+
+#### Tasks Executed
+* set spi on in `/boot/config.txt`
+* remove spi from blacklist
+* reboot
