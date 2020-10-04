@@ -18,21 +18,42 @@
 
       - name: get ssid
         pause:
-          prompt: "please enter ssid for wifi network"
+          prompt: "enter ssid for wifi network"
         register: ssid
+        until: ssid.user_input|length > 0
+        delay: 1
+        retries: 1
 
       - name: get wpa password
         pause:
-          prompt: "please enter psk for {{ssid.user_input}}"
+          prompt: "enter psk for {{ssid.user_input}}"
         register: psk
+        until: psk.user_input|length > 0
+        delay: 1
+        retries: 1
+
+      - name: get country
+        pause:
+          prompt: "enter 2 letter country code"
+        register: country
+        until: country.user_input|length > 0
+        delay: 1
+        retries: 1
+
+      - name: add country code
+        lineinfile:
+          path: /Volumes/boot/wpa_supplicant.conf
+          regexp: ^country=
+          line: country={{ country.user_input|upper }}
+
 
       - name: add ssid and wpa password to supplicant.conf
         blockinfile:
           path: /Volumes/boot/wpa_supplicant.conf
           insertafter: "network={"
           block: |
-             ssid="{{ssid.user_input}}"
-             psk="{{psk.user_input}}"
+                ssid="{{ssid.user_input}}"
+                psk="{{psk.user_input}}"
 
 
 

@@ -6,10 +6,10 @@ raspberrypi.local   ansible_connection=ssh ansible_user=pi
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
-trialpi.local       ansible_connection=ssh ansible_user=pi
+#trialpi.local       ansible_connection=ssh ansible_user=pi
 
 [local]
-localhost
+localhost           ansible_connection=local
 
 [debian]
 slimpi.local        ansible_connection=ssh ansible_user=pi

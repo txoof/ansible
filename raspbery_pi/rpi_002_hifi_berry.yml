@@ -1,0 +1,120 @@
+---
+- name:  setup hifi berry (dac, dac+, dac+ hd, dac+ adc, dac+ adc pro, digi, digi pro, amp+
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+
+  tasks:
+  - name: edit config file
+    block:
+      
+      - name: set list of known cards
+        set_fact:
+          cards:
+            - 'hifiberry-dac'
+            - 'hifiberry-dacplus'
+            - 'hifiberry-dacplushd'
+            - 'hifiberry-dacplusadc'
+            - 'hifiberry-dacplusadcpro'
+            - 'hifiberry-digi'
+            - 'hifiberry-digi-pro'
+            - 'hifiberry-amp'
+
+      - name: prompt for card 
+        pause:
+          prompt: 'enter which card would you like to install: {{ cards }}'
+        register: result
+        until:
+          - result.user_input in cards
+          - result.user_input|length > 0
+        retries: 1
+        delay: 1
+
+      - set_fact:
+          card_type: "{{ result.user_input }}"
+
+      - name: set device tree overlay
+        lineinfile:
+          path: /boot/config.txt
+          regexp: ^dtoverlay={{ card_type }}$
+          line: dtoverlay={{ card_type }}
+        become: true
+        notify: reboot
+
+
+      - name: disable onboard sound
+        replace:
+          path: /boot/config.txt
+          regexp: '^(dtparam=audio=on)$'
+          replace: '#\1'
+        become: true
+        notify: reboot
+
+      - name: get minor kernel version number
+        shell:
+          cmd: uname -r | awk -F . '{print $1"."$2}'
+        register: result
+
+      - set_fact:
+          kern_version: "{{result.stdout}}"
+
+      - debug:
+          msg: "Kernel version: {{kern_version}}"
+
+      - name: force_eeprom_read for linux kernels 5.4 and higher
+        lineinfile:
+          path: /boot/config.txt
+          regexp: ^force_eepromp_read=
+          line: force_eeprom_read=0
+        become: true
+        notify: reboot
+        when:
+          - kern_version|float >= 5.4
+
+      - name: add alsa configuration
+        blockinfile:
+          create: yes
+          path: /etc/asound.conf
+          block: |
+            pcm.!default {
+             type hw card 0
+            }
+            ctl.!default {
+             type hw card 0
+            }
+        become: true
+        notify: reboot
+
+#  - name: check card is installed
+#    block:
+#      - name: get aplay output
+#        command: aplay -l
+#        register: result
+#
+#      - set_fact:
+#          aplayOut: "{{ result.stdout }}"
+#
+#      - set_fact:
+#          filtered: "{{ aplayOut | regex_search(card, '\\1') }}"
+#        vars:
+#          card: "card.*rpihifiberry.*\\[.*\\],.*device.*:\\W+(.*)\\[.*"
+#
+#      - debug:
+#          msg: "Card successfully installed: {{ filtered }}"
+#        when: filtered|length > 0
+#
+#      - debug:
+#          msg: "FAILED to install hifi berry card-- aplay output: {{ aplayOut }}"
+#        when: filtered| length < 1
+
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 45
+        test_command: whoami
+      become: true
+    

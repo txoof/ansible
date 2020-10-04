@@ -1,0 +1,13 @@
+[Unit]
+Description=Set LEDs Off on Start
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/led_ctl off
+ExecStop=/usr/bin/led_ctl on
+After=network-online.target
+RemainAfterExit=yes
+
+
+[Install]
+WantedBy=network-online.target

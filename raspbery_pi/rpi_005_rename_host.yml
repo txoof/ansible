@@ -17,10 +17,19 @@
         msg: "specify -e 'host=hosta,hostb'"
       when: (host is undefined) or (host|length == 0)
 
-    - name: change {{ host }} to {{ new_name }}
+    - name: update etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: ^127.0.1.1\W+{{ ansible_nodename }}
+        line: 127.0.1.1     {{ new_name }}
+      notify: reboot
       become: true
-      hostname: name={{ new_name }}
-      when: ansible_ssh_host != new_name
+
+    - name: update etc/hostname
+      lineinfile:
+        path: /etc/hostname
+        regexp: "{{ ansible_nodename }}"
+        line: "{{ new_name }}"
       notify: reboot
       become: true
 
@@ -28,11 +37,11 @@
     - name: reboot
       reboot:
         msg: "Reboot initiated by Ansible"
-#        connect_timeout: 5
-#        reboot_timeout: 300
-#        pre_reboot_delay: 0
-#        post_reboot_delay: 30
-#        test_command: whoami
+        connect_timeout: 5
+        reboot_timeout: 30
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
       become: true
 
 
