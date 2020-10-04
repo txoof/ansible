@@ -11,12 +11,12 @@ Run one of the playbooks against a host:
 `host=host-name.whatever` Specify the hostname to run against
 
 ## Rasperry Pi Play Books
-**rpi_000_wifi_ssh_setup.yml**
+### rpi_000_wifi_ssh_setup.yml**
 
 Setup wifi and ssh when writing a new image.
 `$ ansible-playbook rpi_wifi_ssh_setup.yml -i hosts -e hosts=localhost`
 
-### Tasks Executed:
+#### Tasks Executed:
 
   * collect SSID name
   * collect WPA key
@@ -24,17 +24,14 @@ Setup wifi and ssh when writing a new image.
   * create network block and set country code
 
 
-**rpi_001_basic_install**
+## rpi_001_basic_install
 Basic setup of a raspberry pi
 
 This playbook requires `sshpass` is installed
 
 Command: `ansible-playbook rpi_basic_install.yml -i hosts -e host=raspberrypi.local --ask-pass`
 
-## TO DO
-  * add sshkey to remote host
-
-### Tasks Executed
+#### Tasks Executed
 
   * install local public ssh key on remote
   * update apt cache
@@ -57,13 +54,13 @@ Command: `ansible-playbook rpi_basic_install.yml -i hosts -e host=raspberrypi.lo
   * configure dotfiles
   * link dotfiles
 
-**rpi_002_hifi_berry**
+### rpi_002_hifi_berry
 
 Setup HiFi Berry Cards
 
 Command: `ansible-playbook rpi_hifi_berry.yml -i hosts -e host=newpi`
 
-### Tasks Executed
+#### Tasks Executed
 
   * find any attached HiFi Berry devices
   * ask user to install hifiberry device
@@ -75,37 +72,29 @@ Command: `ansible-playbook rpi_hifi_berry.yml -i hosts -e host=newpi`
 **rpi_003_check_hifiberry**
 verify hifi berry is installed properly
 
-### Tasks Executed
+#### Tasks Executed
 
   * check card is installed and loaded properly
 
 
-**rpi_004_audio_applications**
+### rpi_004_audio_applications**
 install audio applications
 
-### Tasks Completed
+#### Tasks Completed
 
   * install raspotify and rename display name
   * install squeezelite
 
-**rpi_005_rename_host**
+### rpi_005_rename_host
 
-### Tasks Completed
-
-  * rename host
-
-
-Rename a host
-
-### Tasks Executed
+#### Tasks Completed
   * change host name
   * reboot
 
-**rpi_jivelite**
+### rpi_jivelite
 Install jivelite and configure for R. Pi touch screen
 
-### Tasks Executed
-
+#### Tasks Executed
   * update cache
   * install squeezelite and dependencies for building jivelite
   * install luajit
