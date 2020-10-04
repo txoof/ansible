@@ -12,7 +12,6 @@ Run one of the playbooks against a host:
 
 ## Rasperry Pi Play Books
 ### rpi_000_wifi_ssh_setup.yml**
-
 Setup wifi and ssh when writing a new image.
 `$ ansible-playbook rpi_wifi_ssh_setup.yml -i hosts -e hosts=localhost`
 
@@ -24,7 +23,7 @@ Setup wifi and ssh when writing a new image.
   * create network block and set country code
 
 
-## rpi_001_basic_install
+### rpi_001_basic_install
 Basic setup of a raspberry pi
 
 This playbook requires `sshpass` is installed
@@ -69,7 +68,7 @@ Command: `ansible-playbook rpi_hifi_berry.yml -i hosts -e host=newpi`
   * reboot
   * check for hifiberry card in aplay output
 
-**rpi_003_check_hifiberry**
+### rpi_003_check_hifiberry
 verify hifi berry is installed properly
 
 #### Tasks Executed
