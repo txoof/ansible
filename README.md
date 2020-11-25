@@ -13,7 +13,7 @@ Run one of the playbooks against a host:
 ## Rasperry Pi Play Books
 ### rpi_000_wifi_ssh_setup.yml**
 Setup wifi and ssh when writing a new image.
-`$ ansible-playbook rpi_wifi_ssh_setup.yml -i hosts -e hosts=localhost`
+`$ ansible-playbook rpi_wifi_ssh_setup.yml -i hosts -e host=localhost`
 
 #### Tasks Executed:
 
