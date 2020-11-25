@@ -76,7 +76,7 @@ verify hifi berry is installed properly
   * check card is installed and loaded properly
 
 
-### rpi_004_audio_applications**
+### rpi_004_audio_applications
 install audio applications
 
 #### Tasks Completed
