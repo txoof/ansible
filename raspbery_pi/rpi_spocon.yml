@@ -1,0 +1,46 @@
+---
+- name: spocon installer
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+
+  tasks:
+  - name: add spocon ppa key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 7DBE8BF06EA39B78
+      state: present
+    become: true
+
+  - name: add ppa repo
+    apt_repository:
+      repo: deb http://ppa.launchpad.net/spocon/spocon/ubuntu bionic main
+      state: present
+    become: true
+
+  - name update cache
+    register: updatesys
+    apt:
+      update_cache: yes
+      cache_valid_time: 86400
+    become: true
+
+  - name: install spocon
+    apt:
+      pkg:
+        - spocon
+    become: true
+
+# lines in file:
+# deviceType = "SPEAKER"
+# deviceName = "get a name here"
+# initialVolume = 39321 # 60% of max 65536
+# releaseLineDelay = 10
+
+
+
+
+#  - name: add spocon ppa
+#    apt_repository:
+#      repo: ppa:spocon/spocon
+#      state: present
+#    become: true
