@@ -47,7 +47,7 @@
     lineinfile:
       path: "{{ spocon_config }}"
       regexp: '^deviceName.*'
-      line: "{{ ansible_hostname }}-SpoCon"
+      line: 'deviceName = "{{ ansible_hostname }}-SpoCon"'
     become: true
 
   - name: spocon config - initialVolume
@@ -65,17 +65,10 @@
     become: true
 
 
-# lines in file:
-# deviceType = "SPEAKER"
-# deviceName = "get a name here"
-# initialVolume = 39321 # 60% of max 65536
-# releaseLineDelay = 10
+  - name: restart spocon service
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: spocon
+    become: true
 
-
-
-
-#  - name: add spocon ppa
-#    apt_repository:
-#      repo: ppa:spocon/spocon
-#      state: present
-#    become: true
