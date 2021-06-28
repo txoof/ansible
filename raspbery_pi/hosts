@@ -4,6 +4,7 @@ kitchenpi.local     ansible_connection=ssh ansible_user=pi
 develpi.local       ansible_connection=ssh ansible_user=pi
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
 paperpi.local       ansible_connection=ssh ansible_user=pi
+retropie.local       ansible_connection=ssh ansible_user=pi
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi

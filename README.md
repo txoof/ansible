@@ -28,7 +28,7 @@ Basic setup of a raspberry pi
 
 This playbook requires `sshpass` is installed
 
-Command: `ansible-playbook rpi_basic_install.yml -i hosts -e host=raspberrypi.local --ask-pass`
+Command: `ansible-playbook --ask-pass rpi_001_basic_install.yml -i hosts -e host=raspberrypi.local`
 
 #### Tasks Executed
 
