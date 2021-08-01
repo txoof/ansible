@@ -1,0 +1,79 @@
+---
+- name: development environment basics
+  hosts: "{{ host | default('none') }}"
+  gather_facts: yes
+
+  tasks:
+    - name: update cache
+      register: updatesys
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400 # one day
+      become: true
+
+    - name: upgrade packages
+      register: updatesys
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 86400
+      become: true
+
+    - name: Display previous task to check stats
+      debug:
+        msg: "{{ updatesys.stdout_lines|last }}"
+
+    - name: install packages
+      apt:
+        pkg:
+          - tmux
+          - vim
+          - git
+          - python3
+          - python-setuptools
+          - python3-pip
+          - zsh
+          - python3-gpiozero
+        state: latest
+      become: true
+
+    - name: install numpy dependencies
+      apt:
+        pkg:
+          - python3-numpy
+          - libopenjp2-7
+          - libtiff5
+          - libatlas-base-dev
+        state: latest
+      become: true
+
+    - name: install python packages
+      pip:
+        executable: pip3
+        name:
+          - jupyter
+          - jupyterthemes
+          - jupyter_contrib_nbextensions
+
+    - name: update numpy from PyPi
+      pip:
+        executable: pip3
+        name: numpy
+        state: latest
+
+    - name: install jupyter nb extensions for pi user
+      command: /home/pi/.local/bin/jupyter contrib nbextensions install --user
+
+    - name: make home bin directory 
+      file:
+        path: ~/bin/
+        state: directory
+
+    - name: clone development scripts from github
+      git:
+        repo: "git@github.com:txoof/develtools.git"
+        dest: "~/bin/develtools"
+        clone: yes
+        update: yes
+
