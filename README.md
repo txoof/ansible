@@ -90,6 +90,21 @@ install audio applications
   * change host name
   * reboot
 
+### rpi_development_environment
+Setup basic development environment
+
+#### Tasks Executed
+  * update apt cache
+  * upgrade any apt packages
+  * install development & GPIO packages 
+    - tmux, vim, git, p ython3, python3-pip, zsh, python3-gpiozero
+  * install numpy dependencies from apt
+    - python3-numpy, libopenjp2, libtiff5, libatlas-base-dev
+  * install jupyter packages
+    - jupyter, jupyterthemes
+  * update numpy from PyPi (takes care of version incompatability issues)
+  * clones development tools from github
+
 ### rpi_jivelite
 Install jivelite and configure for R. Pi touch screen
 
