@@ -5,7 +5,6 @@
     - name: new_name
       prompt: "What is the new hostname?"
       private: no
-      when: new_name is undefined
 
 
   tasks:
