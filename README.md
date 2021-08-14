@@ -99,6 +99,19 @@ install audio applications
   * change host name
   * reboot
 
+### update_pis
+Update all pis listed in the [pis] section of hosts file
+
+Command: 
+
+`ansible-playbook update_pis.yml -i hosts`
+
+#### Tasks Completed
+  * update_cache
+  * upgrade
+  * reboot if required
+
+
 ### rpi_development_environment
 Setup basic development environment
 
