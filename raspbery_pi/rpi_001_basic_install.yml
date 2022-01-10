@@ -31,7 +31,7 @@
           - vim
           - git
           - python3
-          - python-setuptools
+          - python3-setuptools
           - python3-pip
           - zsh
           - python3-gpiozero
