@@ -11,7 +11,7 @@ Run one of the playbooks against a host:
 `host=host-name.whatever` Specify the hostname to run against
 
 ## Rasperry Pi Play Books
-### rpi_000_wifi_ssh_setup.yml**
+### rpi_000_wifi_ssh_setup.yml
 Setup wifi and ssh when writing a new image.
 
 `$ ansible-playbook rpi_000_wifi_ssh_setup.yml -i hosts -e host=localhost`
@@ -33,7 +33,7 @@ Run this command to clean up `known_hosts`:
 
 `$ ssh-keygen -R raspberrypi.local`
 
-Command: 
+Command:
 
 `ansible-playbook --ask-pass rpi_001_basic_install.yml -i hosts -e host=raspberrypi.local`
 
@@ -64,7 +64,7 @@ Command:
 
 Setup HiFi Berry Cards
 
-Command: 
+Command:
 
 `ansible-playbook rpi_hifi_berry.yml -i hosts -e host=newpi`
 
@@ -102,7 +102,7 @@ install audio applications
 ### update_pis
 Update all pis listed in the [pis] section of hosts file
 
-Command: 
+Command:
 
 `ansible-playbook update_pis.yml -i hosts`
 
@@ -118,7 +118,7 @@ Setup basic development environment
 #### Tasks Executed
   * update apt cache
   * upgrade any apt packages
-  * install development & GPIO packages 
+  * install development & GPIO packages
     - tmux, vim, git, p ython3, python3-pip, zsh, python3-gpiozero
   * install numpy dependencies from apt
     - python3-numpy, libopenjp2, libtiff5, libatlas-base-dev
@@ -137,10 +137,10 @@ Install jivelite and configure for R. Pi touch screen
   * setup build environment
   * clone jivelite repo
   * make, build and install jivelite
-  * create launch scripts 
+  * create launch scripts
   * add X menu items
   * configure X menus to accomodate JiveLite in psuedo full-screen mode on Rasberry pi
- 
+
 ### rpi_jupyter
 Install jupyter and pipenv
 
@@ -148,7 +148,7 @@ Install jupyter and pipenv
 * Pip install
  - Jupyter
  - pipenv
- 
+
 ### rpi_led_control
 Turn off status lights
 
