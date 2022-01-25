@@ -6,6 +6,8 @@ develpi.local       ansible_connection=ssh ansible_user=pi
 paperpi.local       ansible_connection=ssh ansible_user=pi
 retropie.local       ansible_connection=ssh ansible_user=pi
 develpi3.local      ansible_connection=ssh ansible_user=pi
+testpi22.local      ansible_connection=ssh ansible_user=pi
+busterpi.local      ansible_connection=ssh ansible_user=pi
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
