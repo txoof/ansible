@@ -86,6 +86,11 @@
         state: present
         key: "{{ host_keys.stdout_lines[0] }}"
 
+    - name: add stored keys from github
+      authorized_key:
+        user: pi
+        state: present
+        key: https://github.com/txoof.keys
 
     - name: clone dotfiles repo
       git:
