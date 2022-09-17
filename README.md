@@ -35,7 +35,12 @@ Run this command to clean up `known_hosts`:
 
 Command:
 
+`ansible-playbook rpi_001_basic_install.yml -i hosts -e host=raspberrypi.local`
+
+Or use the following if a ssh key is not already set on the remote pi.
+
 `ansible-playbook --ask-pass rpi_001_basic_install.yml -i hosts -e host=raspberrypi.local`
+
 
 #### Tasks Executed
 
