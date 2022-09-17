@@ -35,6 +35,7 @@
           - python3-pip
           - zsh
           - python3-gpiozero
+          - python-dev
         state: latest
       become: true
 
@@ -55,6 +56,7 @@
           - jupyter
           - jupyterthemes
           - jupyter_contrib_nbextensions
+          - pipenv
 
     - name: update numpy from PyPi
       pip:
