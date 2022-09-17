@@ -1,0 +1,59 @@
+---
+- name: Debian::Install PyEnv
+  hosts: "{{ host | default('none') }}"
+  gather_facts: yes
+
+  tasks:
+    - name: update cache
+      register: updatesys
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+      become: true
+
+    - name: upgrade packages
+      register: updatesys
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 86400
+      become: true
+
+    - name: install packages for PyEnv
+      apt:
+        pkg:
+          - make
+          - build-essential
+          - libssl-dev
+          - zlib1g-dev
+          - libbz2-dev
+          - libreadline-dev
+          - libsqlite3-dev
+          - git
+          - openssl
+          - libssl-dev
+          - libffi-dev
+
+        state: latest
+      become: true
+
+    - name: install pyenv
+      shell: '~ $ curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash'
+
+    - name: generate and update locale
+      shell: 'locale-gen en_US.UTF-8; update-locale en_US.UTF-8'
+      become: true
+
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 45
+        test_command: whoami
+      become: true
+    
