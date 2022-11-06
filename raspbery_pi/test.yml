@@ -1,12 +1,73 @@
 ---
 - name: NONE 
   hosts: "{{ host | default('none') }}"
-  gather_facts: no
+  gather_facts: true
+  vars:
+    kernel_version: "{{ ansible_kernel }}"
+    spocon_config: "/opt/spocon/config.toml"
+
+  # vars_prompt:
+  #   - name: spocon_name
+  #     prompt: "What name should be used for this spocon instance?"
+  #     private: no
+
+
 
   tasks:
-  - debug:
-      msg: "this sis\nmulti line\text"
+    - name: configure spocon for paperpi
+      block:
 
+        - name: prompt spocon name
+          pause:
+            prompt: 'what name should be usded for this spocon instance? Suggested: Spotify-{{ansible_hostname}}'
+          register: spocon_name
+          until:
+            - spocon_name.user_input|length > 0
+          retries: 4
+          delay: 1
+
+        - name: set initial volume to 1/2 of max (65536)
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?initialVolume.*'
+            line: '\1initialVolume = 32768'
+          notify: restart_spocon
+
+        - name: set player name
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?deviceName.*'
+            line: '\1deviceName = "{{ spocon_name.user_input}}"'
+          notify: restart_spocon
+
+        - name: set device type to Speaker
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?deviceType.*'
+            line: '\1deviceType = "SPEAKER"'
+          notify: restart_spocon        
+
+        - name: set volume steps
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?volumeSteps.*'
+            line: '\1volumeSteps = 100'
+          notify: restart_spocon
+
+      become: true
+      
 
   handlers:
     - name: reboot
@@ -18,4 +79,16 @@
         post_reboot_delay: 45
         test_command: whoami
       become: true
-    
+
+    - name: restart_squeezelite
+      become: true
+      service:
+        name: squeezelite
+        state: restarted
+
+    - name: restart_spocon
+      become: true
+      service:
+        name: spocon
+        state: restarted      
+        
