@@ -1,0 +1,70 @@
+---
+- name: install basics
+  hosts: "{{ host | default('none') }}"
+  gather_facts: yes
+
+  tasks
+    - name: install python packages
+      pip:
+        executable: pip3
+        name:
+          - dotfiles
+
+    - name: create .ssh directory
+      file:
+        path: ~/.ssh
+        state: directory
+
+    - name: add autorized key
+      authorized_key:
+        user: "{{ ansible_env.USER }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: Setting keypairs
+      openssh_keypair:
+        path: ~/.ssh/id_rsa
+      register: ssh_output
+
+    - pause:
+        prompt: "Title: [{{ ansible_date_time.date }}] {{ host }}\n\n{{ ssh_output.public_key }}\n\nregister the public key above with github at the following address and then press enter:\nhttps://github.com/txoof/Dotfiles/settings/keys/new"
+
+
+    - name: scan and register keys from host -- github
+      command: "ssh-keyscan github.com"
+      register: host_keys
+      changed_when: false
+
+    - name: add keys for remote host -- github
+      known_hosts:
+        name: "github.com" 
+        state: present
+        key: "{{ host_keys.stdout_lines[0] }}"
+
+
+    - name: clone dotfiles repo
+      git:
+        repo: "git@github.com:txoof/Dotfiles.git"
+        dest: "~/Dotfiles"
+        clone: yes
+        update: yes
+
+    - name: set shell to zsh
+      user:
+        name: "{{ ansible_env.USER }}"
+        shell: /usr/bin/zsh
+      become: yes
+
+    - name: clone oh-my-zsh
+      git:
+        repo: https://github.com/robbyrussell/oh-my-zsh
+        dest: ~/.oh-my-zsh
+
+    - name: set symlink for dotfilesrc
+      file:
+        src: ~/Dotfiles/dotfilesrc
+        dest: ~/.dotfilesrc
+        state: link
+
+    - name: link dotfiles
+      command: "{{ ansible_env.HOME }}/.local/bin/dotfiles -s --force"

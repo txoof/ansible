@@ -1,0 +1,4 @@
+[ubuntu]
+35.204.91.39        ansible_connection=ssh ansible_user=aaron_ciuffo
+media-server.local   ansible_connection=ssh ansible_user=ansible
+

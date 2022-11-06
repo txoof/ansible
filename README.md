@@ -6,30 +6,33 @@ Run one of the playbooks against a host:
 `$ ansible-playbook basic_install.yml -i hosts -e host=raspberrypi.local`
 
 ### Explanation:
+
 `-i` Inventory file that contains all known hosts (update as needed)
 `-e, --extra-var` Specify extra variables that will be used when running playbook
 `host=host-name.whatever` Specify the hostname to run against
 
 ## Rasperry Pi Play Books
+
 ### rpi_000_wifi_ssh_setup.yml
-Setup wifi and ssh when writing a new image.
+
+Setup wifi and ssh when writing a new image. This is largely unneeded as the new Raspery Pi Imager can do this setup during the writing of the SD card image.
 
 `$ ansible-playbook rpi_000_wifi_ssh_setup.yml -i hosts -e host=localhost`
 
-#### Tasks Executed:
+#### Tasks Executed
 
-  * collect SSID name
-  * collect WPA key
-  * collect country code
-  * create network block and set country code
-
+* collect SSID name
+* collect WPA key
+* collect country code
+* create network block and set country code
 
 ### rpi_001_basic_install
-Basic setup of a raspberry pi
 
-This playbook requires `sshpass` is installed
+Basic setup of a raspberry pi.
 
-Run this command to clean up `known_hosts`:
+This playbook requires `sshpass` is installed if no ssh keys defined in the `~.ssh/authroized_keys` file.
+
+Run this command to clean up `known_hosts` on the local device.
 
 `$ ssh-keygen -R raspberrypi.local`
 
@@ -44,18 +47,18 @@ Or use the following if a ssh key is not already set on the remote pi.
 
 #### Tasks Executed
 
-  * install local public ssh key on remote
-  * update apt cache
-  * upgrade apt packages
-  * install apt:
-    - tmux
-    - vim
-    - git
-    - python3
-    - python3-pip
-    - zsh
-  * install python packages:
-    - dotfiles
+* install local public ssh key on remote
+* update apt cache
+* upgrade apt packages
+* install apt:
+  * tmux
+  * vim
+  * git
+  * python3
+  * python3-pip
+  * zsh
+* install python packages:
+ dotfiles
   * create a public/private keypair
   * prompt user to add deploy key to git repo for ssh keys
   * scan and register keys from github
@@ -75,31 +78,43 @@ Command:
 
 #### Tasks Executed
 
-  * find any attached HiFi Berry devices
-  * ask user to install hifiberry device
-  * add hifiberry device to /boot/config.txt
+* find any attached HiFi Berry devices
+* ask user to install hifiberry device
+* configure necessary options in `/boot/config.txt`
   * set force_eeprom_read=0 when kernel version is >= 5.4
-  * reboot
-  * check for hifiberry card in aplay output
+  * see [HiFi Berry Site for additional details](https://www.hifiberry.com/docs/software/configuring-linux-3-18-x/)
+* install [asound-conf-wizard](https://github.com/JasonLG1979/asound-conf-wizard)
+  * prompts to log in an run `sudo awiz` to configure the alsa device appropriately
+* reboot
 
 ### rpi_003_check_hifiberry
+
 verify hifi berry is installed properly
 
 #### Tasks Executed
 
-  * check card is installed and loaded properly
-
+* check card is installed and loaded properly
 
 ### rpi_004_audio_applications
-install audio applications
+
+Install audio applications: [SqueezeLite](https://github.com/ralph-irving/squeezelite) and [SpoCon](https://github.com/spocon/spocon)
 
 #### Tasks Completed
 
-  * install raspotify and rename display name
-  * install squeezelite
+* install and configure squeezelite
+  * install dependencies
+  * set output devices -- use `squeezelite -l` to find the hifiberry device if this does not work automatically
+  * set soundcard release time in seconds -- this allows other audio applications to take control of the device 
+  * restart squeezelite
+* install spocon
+  * set the player name
+  * set the initial volume (1/2 of max)
+  * set device type as "SPEAKER"
+  * restart spocon
 
 ### rpi_005_rename_host
 
+largely uneeded when hostname is set during writing of sd card using Raspberry Pi Imager
 #### Tasks Completed
   * change host name
   * reboot

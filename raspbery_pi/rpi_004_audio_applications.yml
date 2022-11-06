@@ -1,16 +1,15 @@
 ---
 - name:  config
   hosts: "{{ host | default('none') }}"
-  gather_facts: no
-
-
-#  vars_prompt:
-#    - name: raspotify_name
-#      prompt: "What would you like to name the Raspotify client on this host?"
-#      private: no
-#      when: raspotify_name is undefined
+  gather_facts: yes
+  vars:
+    spocon_config: "/opt/spocon/config.toml"
 
   tasks:
+    - name: gather installed debian packages
+      package_facts:
+        manager: "auto"
+
     - name: install and configure squeezelite
       block:
 
@@ -22,6 +21,18 @@
           - squeezelite
           state: latest
         become: true
+        when: "'squeezelite' not in ansible_facts.packages"
+
+      - name: set sound output device
+        lineinfile:
+          path: /etc/default/squeezelite
+          regexp: '^SL_SOUNDCARD="\w+"'
+          line: 'SL_SOUNDCARD="sysdefault:CARD=sndrpihifiberry"'
+          state: present
+          backup: yes
+        become: true
+        register: match
+        notify: restart_squeezelite
 
       - name: set squeezelite timeout for soundcard release
         lineinfile:
@@ -34,51 +45,82 @@
         register: match
         notify: restart_squeezelite
 
-#    - name: install raspotify
-#      block:
-#
-#      - name: add public key for raspotify deb packages
-#        apt_key:
-#          url: https://dtcooper.github.io/raspotify/key.asc
-#          state: present
-#        become: true
-#
-#      - name: add apt repo for raspotify
-#        apt_repository:
-#          repo: deb https://dtcooper.github.io/raspotify raspotify main
-#          state: present
-#        become: true
-#
-#
-#      - name: install raspotify package
-#        apt:
-#          update_cache: yes
-#          pkg: raspotify
-#          state: latest
-#        become: true
-#
-#      - name: set volume args
-#        lineinfile:
-#          path: /etc/default/raspotify
-#          regexp: '^VOLUME_ARGS=.*'
-#          line: VOLUME_ARGS="--enable-volume-normalisation --initial-volume=50"
-#        notify: restart_raspotify
-#        become: true
-#
-#
-#      - fail:
-#          msg: "specify -e 'raspotify_name=NewName'"
-#        when: (raspotify_name is undefined) or (raspotify_name|length == 0)
-#
-#
-#      - name: change name of raspotify host
-#        lineinfile:
-#          path: /etc/default/raspotify
-#          regexp: ^DEVICE_NAME=
-#          line: DEVICE_NAME="{{ raspotify_name }}"
-#        when: raspotify_name is defined
-#        notify: restart_raspotify
-#        become: true
+
+
+
+    - name: install spocon
+      block:
+        - name: get spocon installer script
+          get_url:
+            url: https://spocon.github.io/spocon/install.sh 
+            dest: /tmp/spocon-installer.sh
+            mode: 0755
+
+        - name: execute spocon installer script
+          shell: /tmp/spocon-installer.sh
+
+        - name: cleanup spocon script
+          file:
+            path: /tmp/spocon-installer.sh
+            state: absent
+      become: true
+      when: "'spocon' not in ansible_facts.packages"
+
+
+    - name: configure spocon for paperpi
+      block:
+
+        - name: prompt spocon name
+          pause:
+            prompt: 'what name should be usded for this spocon instance? Suggested: Spotify-{{ansible_hostname}}'
+          register: spocon_name
+          until:
+            - spocon_name.user_input|length > 0
+          retries: 4
+          delay: 1
+
+        - name: set initial volume to 1/2 of max (65536)
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?initialVolume.*'
+            line: '\1initialVolume = 32768'
+          notify: restart_spocon
+
+        - name: set player name
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?deviceName.*'
+            line: '\1deviceName = "{{ spocon_name.user_input}}"'
+          notify: restart_spocon
+
+        - name: set device type to Speaker
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?deviceType.*'
+            line: '\1deviceType = "SPEAKER"'
+          notify: restart_spocon        
+
+        - name: set volume steps
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)?volumeSteps.*'
+            line: '\1volumeSteps = 100'
+          notify: restart_spocon
+
+      become: true
+
 
 
 
@@ -90,10 +132,9 @@
         name: squeezelite
         state: restarted
 
-    - name: restart_raspotify
+    - name: restart_spocon
       become: true
       service:
-        name: raspotify
-        state: restarted
-
+        name: spocon
+        state: restarted  
 
