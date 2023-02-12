@@ -6,6 +6,7 @@ paperpi.local       ansible_connection=ssh ansible_user=pi
 schoolpi.local      ansible_connection=ssh ansible_user=pi
 buster32.local      ansible_connection=ssh ansible_user=pi
 bullseye32.local    ansible_connection=ssh ansible_user=pi
+b32epdtest.local    ansible_connection=ssh ansible_user=pi
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
