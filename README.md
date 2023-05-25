@@ -1,5 +1,9 @@
 # Ansible Playbooks
 
+## Setup Ansible
+
+`brew install ansible`
+
 ## Quick Start
 
 Run one of the playbooks against a host:
