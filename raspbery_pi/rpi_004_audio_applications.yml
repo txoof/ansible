@@ -45,9 +45,6 @@
         register: match
         notify: restart_squeezelite
 
-
-
-
     - name: install spocon
       block:
         - name: get spocon installer script
@@ -65,7 +62,6 @@
             state: absent
       become: true
       when: "'spocon' not in ansible_facts.packages"
-
 
     - name: configure spocon for paperpi
       block:
@@ -121,8 +117,117 @@
 
       become: true
 
+    - name: Update spocon binary if needed
+      block:
+        - name: Query GitHub API
+          uri:
+            url: "https://api.github.com/repos/librespot-org/librespot-java/releases/latest"
+            method: GET
+            return_content: yes
+            timeout: 30
+          register: github_api_result
 
+        - name: Set json_return variable
+          set_fact:
+            json_return: "{{ github_api_result.content | from_json }}"
 
+        - name: Parse JSON and get latest tag version
+          set_fact:
+            latest_tag: "{{ json_return.tag_name | regex_replace('[^0-9.]', '' )}}"
+
+        - name: Set search name
+          set_fact:
+            remote_filename: "librespot-api-{{latest_tag}}.jar"
+
+        - name: Parse JSON and extract browser_download_url for {{ remote_filename }}
+          set_fact:
+            download_urls: "{{ json_return | json_query(query) }}"
+          vars:
+            query: "assets[?contains(name, '{{remote_filename}}' )].browser_download_url"
+
+        - name: Display extracted download URLs
+          debug:
+            var: download_urls[0]
+
+        - name: Set service file path
+          set_fact:
+            spocon_service_file: "/lib/systemd/system/spocon.service"
+
+        - name: Read file contents
+          slurp:
+            path: "{{ spocon_service_file }}"
+          register: spoconservice_contents
+
+        - name: Gather installed release version number
+          set_fact:
+            installed_version: "{{ spoconservice_contents.content | b64decode | regex_search('^ExecStart=.*librespot-.*api-[a-zA-Z]*([0-9.]+)\\.jar', multiline=True) | regex_replace('^ExecStart=.*librespot-.*api-[a-zA-Z]*([0-9.]+)\\.jar', '\\1') }}"
+
+        - name: Display Installed Version
+          debug:
+            msg: "Installed version: {{ installed_version }} :: Latest version {{ latest_tag }}"
+
+        - name: Compare Versions
+          set_fact:
+            versions_equal: "{{ true if latest_tag == installed_version else false }}"
+
+        - meta: end_play
+          when: versions_equal
+
+        - name: Gather spocon working path
+          set_fact:
+            spocon_path: "{{ spoconservice_contents.content | b64decode | regex_search('^WorkingDirectory=(.*)$', multiline=True) | regex_replace('^.*=', '') }}"
+
+        - name: Create temp directory for downloads
+          when: not versions_equal|bool
+          tempfile:
+            state: directory
+          register: temp_dir
+
+        - name: "Download latest release: {{remote_filename}}"
+          when: not versions_equal|bool
+          get_url:
+            url: "{{ download_urls[0] }}"
+            dest: "{{temp_dir.path}}/{{remote_filename}}"
+
+        - name: Update .jar file to downloaded version - {{latest_tag}}
+          when: not versions_equal|bool
+          copy:
+            src: "{{temp_dir.path}}/{{remote_filename}}"
+            dest: "{{spocon_path}}"
+            remote_src: true
+          become: true
+      
+        - name: Stop spocon
+          when: not versions_equal|bool
+          systemd:
+            state: stopped
+            name: spocon
+          become: true
+
+        - name: Update executable in service file
+          when: not versions_equal|bool 
+          replace:
+            path: "{{ spocon_service_file }}"
+            regexp: >-
+              ^(ExecStart=.*)librespot-java-api.*$
+            replace: >-
+              \1{{ remote_filename }}
+          become: true
+
+        - name: Reload spocon unit file
+          when: not versions_equal|bool
+          systemd:
+            state: restarted
+            daemon_reload: True
+            name: spocon
+          become: true
+          
+
+        - name: Cleanup temp files
+          when: not versions_equal|bool
+          file:
+            path: "{{ temp_dir.path }}"
+            state: absent
 
 
   handlers:
