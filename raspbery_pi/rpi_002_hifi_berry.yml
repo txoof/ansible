@@ -6,7 +6,7 @@
     kernel_version: "{{ ansible_kernel }}"
 
   tasks:
-  - name: edit config file
+  - name: Set up hifi berry card
     block:
       
       - name: set list of known cards
@@ -67,6 +67,26 @@
         become: true
         notify: reboot
         when: kernel_version is version('5.4', '>=')
+
+
+      - name: add raspotify repo
+        block:
+          - name: add key
+            get_url:
+              url: https://dtcooper.github.io/raspotify/key.asc
+              dest: /usr/share/keyrings/raspotify_key.asc
+          
+          - name: add source
+            apt_repository:
+              repo: deb [signed-by=/usr/share/keyrings/raspotify_key.asc] https://dtcooper.github.io/raspotify raspotify main
+              state: present      
+
+      - name: update cache
+        register: updatesys
+        apt:
+          update_cache: yes
+          cache_valid_time: 86400 # one day
+        become: true      
 
       - name: install asound-conf-wizard
         ansible.builtin.apt:
