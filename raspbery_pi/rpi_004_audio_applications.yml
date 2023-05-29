@@ -75,14 +75,14 @@
           retries: 4
           delay: 1
 
-        - name: set initial volume to 1/2 of max (65536)
+        - name: set initial volume to 1/4 of max (65536)
           ansible.builtin.lineinfile:
             backup: yes
             backrefs: yes
             state: present
             path: "{{spocon_config}}"
             regexp: '^(\s+)?initialVolume.*'
-            line: '\1initialVolume = 32768'
+            line: '\1initialVolume = 8192'
           notify: restart_spocon
 
         - name: set player name
@@ -105,14 +105,14 @@
             line: '\1deviceType = "SPEAKER"'
           notify: restart_spocon        
 
-        - name: set volume steps
+        - name: set volume steps to 25
           ansible.builtin.lineinfile:
             backup: yes
             backrefs: yes
             state: present
             path: "{{spocon_config}}"
             regexp: '^(\s+)?volumeSteps.*'
-            line: '\1volumeSteps = 100'
+            line: '\1volumeSteps = 25'
           notify: restart_spocon
 
       become: true
