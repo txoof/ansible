@@ -75,11 +75,13 @@
             get_url:
               url: https://dtcooper.github.io/raspotify/key.asc
               dest: /usr/share/keyrings/raspotify_key.asc
+            become: true
           
           - name: add source
             apt_repository:
               repo: deb [signed-by=/usr/share/keyrings/raspotify_key.asc] https://dtcooper.github.io/raspotify raspotify main
               state: present      
+            become: true
 
       - name: update cache
         register: updatesys
@@ -96,7 +98,7 @@
 
       - name: prompt for card setup
         pause:
-          prompt: 'You must now log in and configure alsa sound with `sudo awiz`. Press enter to continue...'
+          prompt: 'You must now reboot, log in and configure alsa sound with `sudo awiz`. Press enter to continue...'
         register: foo
         until:
           - result.user_input
