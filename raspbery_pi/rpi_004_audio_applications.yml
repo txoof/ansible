@@ -68,12 +68,22 @@
 
         - name: prompt spocon name
           pause:
-            prompt: 'what name should be usded for this spocon instance? Suggested: Spotify-{{ansible_hostname}}'
+            prompt: 'what name should be used for this spocon instance? Suggested: Spotify-{{ansible_hostname}}'
           register: spocon_name
           until:
             - spocon_name.user_input|length > 0
           retries: 4
           delay: 1
+
+        - name: set spocon log level to WARN
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^logLevel.*'
+            line: 'logLevel = "WARN"'
+          notify: restart_spocon
 
         - name: set initial volume to 1/4 of max (65536)
           ansible.builtin.lineinfile:
@@ -114,6 +124,17 @@
             regexp: '^(\s+)?volumeSteps.*'
             line: '\1volumeSteps = 25'
           notify: restart_spocon
+        
+        - name: set player.preferredAudioQuality
+          ansible.builtin.lineinfile:
+            backup: yes
+            backrefs: yes
+            state: present
+            path: "{{spocon_config}}"
+            regexp: '^(\s+)preferredAudioQuality\s+=\s+"\w+"'
+            line: '\1preferredAudioQuality = "VERY_HIGH"'
+          notify: restart_spocon
+
 
       become: true
 
