@@ -55,7 +55,7 @@
         name:
           - jupyter
           - jupyterthemes
-          - jupyter_contrib_nbextensions
+          # - jupyter_contrib_nbextensions
           - pipenv
 
     - name: update numpy from PyPi
@@ -64,8 +64,8 @@
         name: numpy
         state: latest
 
-    - name: install jupyter nb extensions for pi user
-      command: /home/pi/.local/bin/jupyter contrib nbextensions install --user
+    # - name: install jupyter nb extensions for pi user
+      # command: /home/pi/.local/bin/jupyter contrib nbextensions install --user
 
     - name: make home bin directory 
       file:
