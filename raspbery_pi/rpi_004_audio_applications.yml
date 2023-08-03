@@ -115,14 +115,14 @@
             line: '\1deviceType = "SPEAKER"'
           notify: restart_spocon        
 
-        - name: set volume steps to 25
+        - name: set volume steps  
           ansible.builtin.lineinfile:
             backup: yes
             backrefs: yes
             state: present
             path: "{{spocon_config}}"
             regexp: '^(\s+)?volumeSteps.*'
-            line: '\1volumeSteps = 25'
+            line: '\1volumeSteps = 100'
           notify: restart_spocon
         
         - name: set player.preferredAudioQuality
