@@ -1,0 +1,113 @@
+---
+- name: Setup simple SMTP client
+  hosts: "{{ host | default('none') }}"
+  gather_facts: no
+  vars:
+    postfixpath: /etc/postfix/
+  
+
+  tasks:
+    - name: Documentation
+      debug:
+        msg: "see https://tecadmin.net/configure-postfix-use-gmail-smtp-ubuntu/"
+  
+    - name: Refresh cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 86400 # one day
+      become: true
+    
+    - name: Install postfix packages
+      ansible.builtin.apt:
+        pkg:
+          - postfix
+          - mailutils
+      become: true
+
+    - name: add relayhost
+      lineinfile: 
+        path: "{{ postfixpath }}/main.cf"
+        regexp: '^relayhost\W{0,}=\W{0,}.*'
+        line: relayhost = [smtp.gmail.com]:587
+        state: present
+      become: true
+
+    - name: relayhost configuration
+      blockinfile:
+        path: "{{ postfixpath }}/main.cf"
+        insertafter: '^relayhost\W{0,}=\W{0,}.*'
+        marker: "# -- {mark} ansible managed block--"
+        block: |
+          smtp_use_tls = yes
+          smtp_sasl_auth_enable = yes
+          smtp_sasl_security_options = noanonymous
+          smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+          smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+      become: true
+
+    - name: create SASL password file
+      ansible.builtin.file:
+        path: "{{ postfixpath }}/sasl_passwd"
+        state: touch
+        mode: "0600"
+      become: true
+    
+
+    - name: check for username & password
+      ansible.builtin.lineinfile:
+        path: "{{ postfixpath }}/sasl_passwd"
+        regexp: '^\[smtp\.gmail\.com\]:587\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:\w+\s{0,}$'
+        state: absent
+      check_mode: yes
+      changed_when: false
+      register: result
+      become: true
+
+    
+    - name: prompt for Auth Username
+      pause:
+        prompt: 'Gmail Username Name'
+      register: username
+      when: not result.found
+
+    - name: prompt for Auth Password
+      pause:
+        prompt: 'Gmail app-specific password'
+        echo: no
+      register: password
+      when: not result.found
+
+    - name: add AuthInfo string
+      copy:
+        content: '[smtp.gmail.com]:587  {{ username.user_input }}:{{ password.user_input }}'
+        dest: "{{ postfixpath }}/sasl_passwd"
+        force: yes
+      when: not result.found
+      become: true
+
+    - name: make hashmap of the sasl_passwd file
+      shell: /usr/sbin/postmap /etc/postfix/sasl_passwd
+      become: true
+
+    - name: restart postfix daemon
+      systemd_service:
+        state: restarted
+        name: postfix
+      become: true
+
+    - name: finish
+      debug:
+        msg: 'test configuration with: echo "This is a test email." | mail -s "Test Email" your_email@addre.ss'
+
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 45
+        test_command: whoami
+      become: true
+    
