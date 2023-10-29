@@ -11,6 +11,9 @@ b32epdtest02.local  ansible_connection=ssh ansible_user=pi
 livingroom.local    ansible_connection=ssh ansible_user=pi
 gewoon.local        ansible_connection=ssh ansible_user=pi
 lrnew.local         ansible_connection=ssh ansible_user=pi
+bookworm32.local    ansible_connection=ssh ansible_user=pi
+bookworm32n.local   ansible_connection=ssh ansible_user=pi
+
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
