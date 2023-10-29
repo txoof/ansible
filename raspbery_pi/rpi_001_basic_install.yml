@@ -42,14 +42,22 @@
           - python3
           - python3-setuptools
           - python3-pip
+          - python3-full
           - zsh
           - python3-gpiozero
         state: latest
       become: true
 
+    # - name: remove EXTERNALLY-MANAGED
+    #   file:
+    #     path: "/usr/lib/python{{ ansible_python.version.major }}.{{ ansible_python.version.minor }}/EXTERNALLY-MANAGED"
+    #     state: absent
+    #   become: true
+  
     - name: install python packages
       pip:
         executable: pip3
+        extra_args: --user --break-system-packages
         name:
           - dotfiles
 
@@ -58,7 +66,7 @@
         path: ~/.ssh
         state: directory
 
-    - name: add autorized key
+    - name: add authorized key
       authorized_key:
         user: pi
         state: present
