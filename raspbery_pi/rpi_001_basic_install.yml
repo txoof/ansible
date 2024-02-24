@@ -44,7 +44,6 @@
           - python3-pip
           - python3-full
           - zsh
-          - python3-gpiozero
         state: latest
       become: true
 
@@ -108,6 +107,13 @@
         clone: yes
         update: yes
 
+    - name: clone development tools
+      git:
+        repo: git@github.com:txoof/develtools.git
+        dest: ~/bin/develtools
+        clone: yes
+        update: yes
+
     - name: set shell to zsh
       user:
         name: pi
@@ -118,6 +124,7 @@
       git:
         repo: https://github.com/robbyrussell/oh-my-zsh
         dest: ~/.oh-my-zsh
+
 
     - name: set symlink for dotfilesrc
       file:
