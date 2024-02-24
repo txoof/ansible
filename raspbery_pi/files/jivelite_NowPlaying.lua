@@ -1,1 +1,0 @@
-settings = {selectedStyle="nowplaying",views={nowplaying_text_only=false,nowplaying_spectrum_text=false,nowplaying=true,nowplaying_vuanalog_text=false,nowplaying_art_only=false,nowplaying_large_art=false,},scrollText=true,scrollTextOnce=false,}

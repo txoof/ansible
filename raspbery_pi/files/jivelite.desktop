@@ -1,8 +1,0 @@
-[Desktop Entry]
-Comment=
-Terminal=false
-Name=jivelite
-Exec=/home/pi/bin/jivelite.sh
-Type=Application
-Icon=gnome-panel-launcher
-Hidden=false
