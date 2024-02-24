@@ -6,6 +6,19 @@
     kernel_version: "{{ ansible_kernel }}"
 
   tasks:
+  - name: Set config_txt variable based on OS release
+    set_fact:
+      config_txt: "{{ '/boot/config.txt' if ansible_distribution_release == 'bullseye' else '/boot/firmware/config.txt' }}"
+
+  - name: Display the value of config_txt variable
+    debug:
+      msg: "The value of config_txt is {{ config_txt }}"
+
+  - name: Pause the playbook execution
+    pause:
+      prompt: "Press Enter to continue"
+
+
   - name: Set up hifi berry card
     block:
       
@@ -36,7 +49,7 @@
 
       - name: set device tree overlay
         lineinfile:
-          path: /boot/config.txt
+          path: "{{ config_txt }}"  # Using the variable here
           regexp: ^dtoverlay={{ card_type }}$
           line: dtoverlay={{ card_type }}
         become: true
@@ -45,7 +58,7 @@
 
       - name: disable onboard sound
         replace:
-          path: /boot/config.txt
+          path: "{{ config_txt }}"  
           regexp: '^(dtparam=audio=on)$'
           replace: '#\1'
         become: true
@@ -53,7 +66,7 @@
 
       - name: disable onboard sound
         replace:
-          path: /boot/config.txt
+          path: "{{ config_txt }}"
           regexp: '^(dtparam=vc4-fkms-v3d)$'
           replace: '#\1'
         become: true
@@ -61,7 +74,7 @@
 
       - name: force_eeprom_read for linux kernels 5.4 and higher
         lineinfile:
-          path: /boot/config.txt
+          path: "{{ config_txt }}"
           regexp: '^force_eepromp_read='
           line: 'force_eeprom_read=0'
         become: true
