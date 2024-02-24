@@ -31,42 +31,16 @@
           - vim
           - git
           - python3
-          - python-setuptools
+          - python3-setuptools
           - python3-pip
           - zsh
           - python3-gpiozero
-          - python-dev
+          - python3-dev
+          - virtualenv
+          - curl
         state: latest
       become: true
-
-    - name: install numpy dependencies
-      apt:
-        pkg:
-          - python3-numpy
-          - libopenjp2-7
-          - libtiff5
-          - libatlas-base-dev
-        state: latest
-      become: true
-
-    - name: install python packages
-      pip:
-        executable: pip3
-        name:
-          - jupyter
-          - jupyterthemes
-          # - jupyter_contrib_nbextensions
-          - pipenv
-
-    - name: update numpy from PyPi
-      pip:
-        executable: pip3
-        name: numpy
-        state: latest
-
-    # - name: install jupyter nb extensions for pi user
-      # command: /home/pi/.local/bin/jupyter contrib nbextensions install --user
-
+       
     - name: make home bin directory 
       file:
         path: ~/bin/
@@ -78,4 +52,21 @@
         dest: "~/bin/develtools"
         clone: yes
         update: yes
+      ignore_errors: yes
 
+    - name: Get Python version
+      command: python3 -c "import sys; print('.'.join(map(str, sys.version_info[:2])))"
+      register: py_version
+      changed_when: False
+
+    - name: Create a virtual environment
+      command: 
+        cmd: python3 -m venv ~/venv-python-{{ py_version.stdout}}
+    
+    - name: Install python packages using virtual environment
+      pip:
+        name: 
+          - jupyter
+          - jupyter_contrib_nbextensions
+          - jupytext
+        virtualenv: ~/venv-python-{{ py_version.stdout}}
