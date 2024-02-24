@@ -2,13 +2,16 @@
 - name:  config
   hosts: "{{ host | default('none') }}"
   gather_facts: yes
-  vars:
-    spocon_config: "/opt/spocon/config.toml"
 
   tasks:
     - name: gather installed debian packages
       package_facts:
         manager: "auto"
+
+    - name: check if go-librespot is installed
+      stat:
+        path: /usr/local/bin/go-librespot-daemon
+      register: go_librespot_installed
 
     - name: install and configure squeezelite
       block:
@@ -19,6 +22,7 @@
           - curl
           - apt-transport-https
           - squeezelite
+          
           state: latest
         become: true
         when: "'squeezelite' not in ansible_facts.packages"
@@ -45,210 +49,86 @@
         register: match
         notify: restart_squeezelite
 
-    - name: install spocon
-      block:
-        - name: get spocon installer script
-          get_url:
-            url: https://spocon.github.io/spocon/install.sh 
-            dest: /tmp/spocon-installer.sh
-            mode: 0755
-
-        - name: execute spocon installer script
-          shell: /tmp/spocon-installer.sh
-
-        - name: cleanup spocon script
-          file:
-            path: /tmp/spocon-installer.sh
-            state: absent
-      become: true
-      when: "'spocon' not in ansible_facts.packages"
-
-    - name: configure spocon for paperpi
+    - name: build and install go-librespot
       block:
 
-        - name: prompt spocon name
-          pause:
-            prompt: 'what name should be used for this spocon instance? Suggested: Spotify-{{ansible_hostname}}'
-          register: spocon_name
-          until:
-            - spocon_name.user_input|length > 0
-          retries: 4
-          delay: 1
+        - name: install debian packages for go-librespot
+          apt: 
+            pkg:
+            - libasound2-dev
+            - libogg-dev
+            - libvorbis-dev
 
-        - name: set spocon log level to WARN
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^logLevel.*'
-            line: 'logLevel = "WARN"'
-          notify: restart_spocon
-
-        - name: set initial volume to 1/4 of max (65536)
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^(\s+)?initialVolume.*'
-            line: '\1initialVolume = 8192'
-          notify: restart_spocon
-
-        - name: set player name
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^(\s+)?deviceName.*'
-            line: '\1deviceName = "{{ spocon_name.user_input}}"'
-          notify: restart_spocon
-
-        - name: set device type to Speaker
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^(\s+)?deviceType.*'
-            line: '\1deviceType = "SPEAKER"'
-          notify: restart_spocon        
-
-        - name: set volume steps  
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^(\s+)?volumeSteps.*'
-            line: '\1volumeSteps = 100'
-          notify: restart_spocon
+        - name: clone go-librespot repo
+          git: 
+            repo: https://github.com/devgianlu/go-librespot.git
+            dest: /tmp/go-librespot
         
-        - name: set player.preferredAudioQuality
-          ansible.builtin.lineinfile:
-            backup: yes
-            backrefs: yes
-            state: present
-            path: "{{spocon_config}}"
-            regexp: '^(\s+)preferredAudioQuality\s+=\s+"\w+"'
-            line: '\1preferredAudioQuality = "VERY_HIGH"'
-          notify: restart_spocon
-
-
-      become: true
-
-    - name: Update spocon binary if needed
-      block:
-        - name: Query GitHub API
-          uri:
-            url: "https://api.github.com/repos/librespot-org/librespot-java/releases/latest"
-            method: GET
-            return_content: yes
-            timeout: 30
-          register: github_api_result
-
-        - name: Set json_return variable
-          set_fact:
-            json_return: "{{ github_api_result.content | from_json }}"
-
-        - name: Parse JSON and get latest tag version
-          set_fact:
-            latest_tag: "{{ json_return.tag_name | regex_replace('[^0-9.]', '' )}}"
-
-        - name: Set search name
-          set_fact:
-            remote_filename: "librespot-api-{{latest_tag}}.jar"
-
-        - name: Parse JSON and extract browser_download_url for {{ remote_filename }}
-          set_fact:
-            download_urls: "{{ json_return | json_query(query) }}"
-          vars:
-            query: "assets[?contains(name, '{{remote_filename}}' )].browser_download_url"
-
-        - name: Display extracted download URLs
-          debug:
-            var: download_urls[0]
-
-        - name: Set service file path
-          set_fact:
-            spocon_service_file: "/lib/systemd/system/spocon.service"
-
-        - name: Read file contents
-          slurp:
-            path: "{{ spocon_service_file }}"
-          register: spoconservice_contents
-
-        - name: Gather installed release version number
-          set_fact:
-            installed_version: "{{ spoconservice_contents.content | b64decode | regex_search('^ExecStart=.*librespot-.*api-[a-zA-Z]*([0-9.]+)\\.jar', multiline=True) | regex_replace('^ExecStart=.*librespot-.*api-[a-zA-Z]*([0-9.]+)\\.jar', '\\1') }}"
-
-        - name: Display Installed Version
-          debug:
-            msg: "Installed version: {{ installed_version }} :: Latest version {{ latest_tag }}"
-
-        - name: Compare Versions
-          set_fact:
-            versions_equal: "{{ true if latest_tag == installed_version else false }}"
-
-        - meta: end_play
-          when: versions_equal
-
-        - name: Gather spocon working path
-          set_fact:
-            spocon_path: "{{ spoconservice_contents.content | b64decode | regex_search('^WorkingDirectory=(.*)$', multiline=True) | regex_replace('^.*=', '') }}"
-
-        - name: Create temp directory for downloads
-          when: not versions_equal|bool
-          tempfile:
-            state: directory
-          register: temp_dir
-
-        - name: "Download latest release: {{remote_filename}}"
-          when: not versions_equal|bool
+        - name: Download Go 1.22
           get_url:
-            url: "{{ download_urls[0] }}"
-            dest: "{{temp_dir.path}}/{{remote_filename}}"
+            url: "https://go.dev/dl/go1.22.0.linux-arm64.tar.gz"
+            dest: /tmp/go.linux-arm64.tar.gz
+            mode: '0755'
 
-        - name: Update .jar file to downloaded version - {{latest_tag}}
-          when: not versions_equal|bool
-          copy:
-            src: "{{temp_dir.path}}/{{remote_filename}}"
-            dest: "{{spocon_path}}"
-            remote_src: true
-          become: true
-      
-        - name: Stop spocon
-          when: not versions_equal|bool
-          systemd:
-            state: stopped
-            name: spocon
-          become: true
+        - name: extract go release
+          unarchive:
+            src: /tmp/go.linux-arm64.tar.gz
+            dest: /usr/local
+            remote_src: yes
+            creates: /usr/local/go
 
-        - name: Update executable in service file
-          when: not versions_equal|bool 
-          replace:
-            path: "{{ spocon_service_file }}"
-            regexp: >-
-              ^(ExecStart=.*)librespot-java-api.*$
-            replace: >-
-              \1{{ remote_filename }}
-          become: true
+        - name: Find all executables in /usr/local/go/bin
+          ansible.builtin.find:
+            paths: /usr/local/go/bin
+            file_type: file
+          register: go_bin_files
 
-        - name: Reload spocon unit file
-          when: not versions_equal|bool
-          systemd:
-            state: restarted
-            daemon_reload: True
-            name: spocon
-          become: true
-          
+        - name: Create symlinks in /usr/local/bin
+          ansible.builtin.file:
+            src: "{{ item.path }}"
+            dest: "/usr/local/bin/{{ item.path | basename }}"
+            state: link
+          loop: "{{ go_bin_files.files }}"
 
-        - name: Cleanup temp files
-          when: not versions_equal|bool
+        - name: build go-librespot  
+          shell: |
+            cd /tmp/go-librespot
+            env GOARCH=arm64 GOOS=linux CGO_ENABLED=1 go build -o /usr/local/bin/go-librespot-daemon ./cmd/daemon
+        
+        - name: set executable permissions on go-librespot
           file:
-            path: "{{ temp_dir.path }}"
+            path: /usr/local/bin/go-librespot-daemon
+            mode: '0755'
+
+        - name: Copy librespot_config.yml to /etc
+          copy:
+            src: ./files/librespot_config.yml
+            dest: /etc/librespot_config.yml
+            owner: root
+            group: root
+            mode: '0644'
+
+        - name: Install go-librespot-daemon systemd unit file
+          ansible.builtin.copy:
+            src: ./files/go-librespot_daemon.service
+            dest: /etc/systemd/system/go-librespot-daemon.service
+            owner: root
+            group: root
+            mode: '0644'
+          notify:
+            - Reload systemd
+            - Enable and start go-librespot-daemon
+
+        - name: cleanup go-librespot
+          file:
+            path: /tmp/go-librespot
             state: absent
+          become: true
+        
+      when: go_librespot_installed.stat.exists == False  
+      become: true
+    
+
 
 
   handlers:
@@ -258,9 +138,20 @@
         name: squeezelite
         state: restarted
 
-    - name: restart_spocon
-      become: true
-      service:
-        name: spocon
-        state: restarted  
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Enable and start go-librespot-daemon
+      ansible.builtin.systemd:
+        name: go-librespot-daemon
+        enabled: yes
+        state: started
+
+
+    # - name: restart_spocon
+    #   become: true
+    #   service:
+    #     name: spocon
+    #     state: restarted  
 

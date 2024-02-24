@@ -1,0 +1,12 @@
+[Unit]
+Description=Spotify Daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/go-librespot-daemon -config_path /etc/librespot_config.yml
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
