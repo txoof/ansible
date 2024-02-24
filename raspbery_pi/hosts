@@ -1,19 +1,12 @@
 [pis]
-develpi.local       ansible_connection=ssh ansible_user=pi
-webhost.local       ansible_connection=ssh ansible_user=pi
-#raspberrypi.local   ansible_connection=ssh ansible_user=pi
-paperpi.local       ansible_connection=ssh ansible_user=pi
-schoolpi.local      ansible_connection=ssh ansible_user=pi
-buster32.local      ansible_connection=ssh ansible_user=pi
-bullseye32.local    ansible_connection=ssh ansible_user=pi
-b32epdtest.local    ansible_connection=ssh ansible_user=pi
-b32epdtest02.local  ansible_connection=ssh ansible_user=pi
-livingroom.local    ansible_connection=ssh ansible_user=pi
-gewoon.local        ansible_connection=ssh ansible_user=pi
-lrnew.local         ansible_connection=ssh ansible_user=pi
-bookworm32.local    ansible_connection=ssh ansible_user=pi
-bookworm32n.local   ansible_connection=ssh ansible_user=pi
+p3-214.txoof.com    ansible_connection=ssh ansible_user=pi
+p4-174.txoof.com    ansible_connection=ssh ansible_user=pi
+p3-127.txoof.com    ansible_connection=ssh ansible_user=pi
+p5-126.txoof.com    ansible_connection=ssh ansible_user=pi
+p4-31.txoof.com     ansible_connection=ssh ansible_user=pi
 
+#raspberrypi.local   ansible_connection=ssh ansible_user=pi
+schoolpi.local      ansible_connection=ssh ansible_user=pi
 
 [newpi]
 raspberrypi.local   ansible_connection=ssh ansible_user=pi
