@@ -6,3 +6,4 @@ device_type: speaker
 server_port: 24879
 volume_steps: 25
 bitrate: 320
+initial_volume: 13
