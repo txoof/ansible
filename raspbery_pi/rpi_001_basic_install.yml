@@ -53,12 +53,12 @@
     #     state: absent
     #   become: true
   
-    - name: install python packages
-      pip:
-        executable: pip3
-        extra_args: --user --break-system-packages
-        name:
-          - dotfiles
+    # - name: install python packages
+    #   pip:
+    #     executable: pip3
+    #     extra_args: --user --break-system-packages
+    #     name:
+    #       - dotfiles
 
     - name: create .ssh directory
       file:
