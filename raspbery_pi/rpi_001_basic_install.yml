@@ -1,16 +1,160 @@
 ---
 - name: install basics
   hosts: "{{ host | default('none') }}"
+  collections:
+    - community.general
   gather_facts: yes
 
   tasks:
-    - name: set /etc/locale.gen
-      shell: 'perl -pi -e "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g" /etc/locale.gen'
-      become: true
+    - name: Prompt user to switch off status lights
+      pause:
+        prompt: "Would you like to switch off the status lights on this Raspberry PI? ( [N]/y )"
+      register: user_response
+      tags:
+        - configure
+        - new_install
 
-    - name: generate and update locale
-      shell: 'locale-gen en_US.UTF-8; update-locale en_US.UTF-8'
+    - name: switch off power light on Raspberry Pi
+      blockinfile:
+        path: /boot/firmware/config.txt
+        block: |
+          # Disable PWR LED
+          dtparam=pwr_led_trigger=default-on
+          dtparam=pwr_led_activelow=off
+        marker: "# {mark} ANSIBLE_MANAGED_PWR_LED_DISABLE"
+        insertafter: '\[all\]'
+      when: user_response.user_input is defined and user_response.user_input | lower == 'y'
       become: true
+      tags:
+        - new_install
+        - configure
+
+    - name: Create .ssh directory for user pi with proper permissions
+      file:
+        path: /home/pi/.ssh
+        state: directory
+        owner: pi
+        group: pi
+        mode: '0700'
+      become: true
+      tags: 
+        - new_install
+        - generate_ssh
+
+    - name: Check if SSH keys exist
+      stat:
+        path: "{{ item }}"
+      loop:
+        - /home/pi/.ssh/id_rsa
+        - /home/pi/.ssh/id_rsa.pub
+      register: ssh_keys_exist
+      become: true
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: Generate SSH keypair if not present
+      openssh_keypair:
+        path: /home/pi/.ssh/id_rsa
+        owner: pi
+        group: pi
+        mode: '0600'
+        type: rsa
+        size: 2048
+      register: ssh_output
+      become: true
+      when: not (ssh_keys_exist.results[0].stat.exists and ssh_keys_exist.results[1].stat.exists)
+      tags: 
+        - new_install
+        - generate_ssh
+
+    - name: Read the public key
+      slurp:
+        src: /home/pi/.ssh/id_rsa.pub
+      register: public_key
+      become: true
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: Prompt user to register deploy key
+      pause:
+        prompt: |
+          .
+          ####### REGISTER DEPLOY KEY WITH GITHUB AND PULL DOWN AUTHORIZED_KEYS #######
+
+          Title: [{{ ansible_date_time.date }}] {{ inventory_hostname }}
+
+          {{ public_key.content | b64decode }}
+
+          Copy the public key above and register it at GitHub as a deploy key 
+          at the following address.
+
+          https://github.com/txoof/Dotfiles/settings/keys/new
+
+          Press [Enter] when the task is completed to proceed.
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: scan and register keys from host -- github
+      command: "ssh-keyscan github.com"
+      register: host_keys
+      changed_when: false
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: add keys for remote host (github) to known_hosts
+      known_hosts:
+        name: "github.com" 
+        state: present
+        key: "{{ host_keys.stdout }}"
+      when: host_keys.stdout is defined
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: fetch stored keys from github
+      get_url:
+        url: "https://github.com/txoof.keys"
+        dest: "/tmp/txoof.keys"
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: add each stored key from github to authorized_keys
+      shell: "cat /tmp/txoof.keys"
+      register: github_keys
+      changed_when: false
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: add each key to authorized_keys
+      authorized_key:
+        user: pi
+        state: present
+        key: "{{ item }}"
+      loop: "{{ github_keys.stdout_lines }}"
+      tags:
+        - new_install
+        - generate_ssh
+
+    - name: Generate locale en_US.UTF-8
+      command: locale-gen en_US.UTF-8
+      become: true
+      tags: new_install
+  
+    - name: Ensure locale is set in /etc/default/locale
+      ini_file:
+        path: /etc/default/locale
+        section: ''
+        option: LANG
+        value: 'en_US.UTF-8'
+      become: true
+      tags: new_install
+
 
     - name: update cache
       register: updatesys
@@ -18,6 +162,7 @@
         update_cache: yes
         cache_valid_time: 86400 # one day
       become: true
+      tags: update
 
     - name: upgrade packages
       register: updatesys
@@ -27,6 +172,7 @@
         update_cache: yes
         cache_valid_time: 86400
       become: true
+      tags: update
 
     - name: Display previous task to check stats
       debug:
@@ -46,59 +192,9 @@
           - zsh
         state: latest
       become: true
-
-    # - name: remove EXTERNALLY-MANAGED
-    #   file:
-    #     path: "/usr/lib/python{{ ansible_python.version.major }}.{{ ansible_python.version.minor }}/EXTERNALLY-MANAGED"
-    #     state: absent
-    #   become: true
-  
-    # - name: install python packages
-    #   pip:
-    #     executable: pip3
-    #     extra_args: --user --break-system-packages
-    #     name:
-    #       - dotfiles
-
-    - name: create .ssh directory
-      file:
-        path: ~/.ssh
-        state: directory
-
-    - name: add authorized key
-      authorized_key:
-        user: pi
-        state: present
-        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
-
-    - name: Setting keypairs
-      openssh_keypair:
-        path: ~/.ssh/id_rsa
-      register: ssh_output
-
-    - pause:
-        prompt: "Title: [{{ ansible_date_time.date }}] {{ host }}\n\n{{ ssh_output.public_key }}\n\nregister the public key above with github at the following address and then press enter:\nhttps://github.com/txoof/Dotfiles/settings/keys/new"
-
-
-    - name: scan and register keys from host -- github
-      command: "ssh-keyscan github.com"
-      register: host_keys
-      changed_when: false
-
-#    - debug:
-#        msg: "{{ host_keys.stdout_lines[0] }}"
-
-    - name: add keys for remote host -- github
-      known_hosts:
-        name: "github.com" 
-        state: present
-        key: "{{ host_keys.stdout_lines[0] }}"
-
-    - name: add stored keys from github
-      authorized_key:
-        user: pi
-        state: present
-        key: https://github.com/txoof.keys
+      tags: 
+        - update 
+        - new_install
 
     - name: clone dotfiles repo
       git:
@@ -106,6 +202,17 @@
         dest: "~/Dotfiles"
         clone: yes
         update: yes
+      tags:
+        - update
+        - new_install
+
+    - name: run install command
+      command: "./install"
+      args:
+        chdir: "~/Dotfiles"
+      tags:
+        - new_install
+        - update
 
     - name: clone development tools
       git:
@@ -113,24 +220,31 @@
         dest: ~/bin/develtools
         clone: yes
         update: yes
+      tags: 
+        - new_install
 
     - name: set shell to zsh
       user:
         name: pi
         shell: /usr/bin/zsh
       become: yes
+      tags: 
+        - new_install
 
     - name: clone oh-my-zsh
       git:
         repo: https://github.com/robbyrussell/oh-my-zsh
         dest: ~/.oh-my-zsh
+      tags: 
+        - new_install
 
 
-    - name: set symlink for dotfilesrc
-      file:
-        src: ~/Dotfiles/dotfilesrc
-        dest: ~/.dotfilesrc
-        state: link
-
-    - name: link dotfiles
-      command: /home/pi/.local/bin/dotfiles -s --force
+  handlers:
+    - name: reboot Raspberry Pi
+      reboot:
+        msg: "Rebooting the Raspberry Pi to apply power LED configuration changes."
+        connect_timeout: 5
+        reboot_timeout: 300
+      tags:
+        - reboot
+        - configure
