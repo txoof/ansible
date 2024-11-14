@@ -1,9 +1,11 @@
-device_name: LibreSpot-Spotify
-log_level: warning
+device_name: Livingroom-Spotify
+log_level: debug
 credentials:
   type: zeroconf
 device_type: speaker
-server_port: 24879
-volume_steps: 64
+server:
+  enabled: true
+  port: 24879
+volume_steps: 50
 bitrate: 320
 initial_volume: 4
