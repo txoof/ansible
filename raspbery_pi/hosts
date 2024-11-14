@@ -2,8 +2,12 @@
 p3-214.txoof.com    ansible_connection=ssh ansible_user=pi
 p4-174.txoof.com    ansible_connection=ssh ansible_user=pi
 p3-127.txoof.com    ansible_connection=ssh ansible_user=pi
+p3-209.txoof.com    ansible_connection=ssh ansible_user=pi
 p5-126.txoof.com    ansible_connection=ssh ansible_user=pi
 p4-31.txoof.com     ansible_connection=ssh ansible_user=pi
+p3-65.txoof.com     ansible_connection=ssh ansible_user=pi
+p4-192.txoof.com    ansible_connection=ssh ansible_user=pi
+
 
 #raspberrypi.local   ansible_connection=ssh ansible_user=pi
 schoolpi.local      ansible_connection=ssh ansible_user=pi
